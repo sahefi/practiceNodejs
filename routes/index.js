@@ -1,4 +1,5 @@
 var express = require('express');
+const { body,query, param, check, validationResult } = require('express-validator');
 var router = express.Router();
 
 /* GET home page. */
@@ -140,6 +141,7 @@ function listRokok(){
 function rokokObject(){
   const rokokMurah =[
     {
+      id : 1,
       nama:"Malboro",
       jumlah : {
         stock : 2,
@@ -147,12 +149,22 @@ function rokokObject(){
       }
     },
     {
+      id : 2,
       nama:"LA",
       jumlah : {
         stock : 1,
         stock_gudang : 10
       }
+    },
+    {
+      id : 3,
+      nama:"LA",
+      jumlah : {
+        stock : 1,
+        stock_gudang : 5
+      }
     }
+
   ]
   return rokokMurah
 }
@@ -197,12 +209,22 @@ if(!filter){
 })
 
 
-router.get("/objectRokok",(req,res)=>{
+router.get("/objectRokok",
+query('filterId').optional().isAlphanumeric().withMessage('ID Invalid'),
+query('addStock').optional().isInt({min:0}).withMessage('harus number positif'),
+query('addStockGudang').optional().isInt({min:0}).withMessage('harus number positif'),
+(req,res)=>{
+  const error = validationResult(req);
+  if(!error.isEmpty()){
+    res.send({
+      message: error.array()
+    }).status(400)
+  }
   const rokokList = rokokObject()
   let hasil = []
-  const {filterNama,addStock,addStockGudang}=req.query
+  const {filterNama,filterId,addStock,addStockGudang}=req.query
   const {objectRokok}=req.body
-  if (!filterNama){
+  if (!filterId&&!filterNama){
     res.send({
       status:true,
       message:"Succes",
@@ -211,7 +233,8 @@ router.get("/objectRokok",(req,res)=>{
   }else{
     for(i = 0; i < rokokList.length; i++){
 
-      if(rokokList[i].nama === filterNama){
+      if(rokokList[i].id === Number(filterId)){
+        console.log(filterNama)
         if(rokokList[i].jumlah.stock_gudang + Number(addStockGudang||0) >= Number(addStock||0)){
 
           if(addStock){
@@ -223,7 +246,7 @@ router.get("/objectRokok",(req,res)=>{
           }
 
           hasil.push(rokokList[i])
-          
+
         }else{
           res.status(400).send({
             status:false,
@@ -231,6 +254,9 @@ router.get("/objectRokok",(req,res)=>{
             data : null
           }); 
         }
+      }else if (rokokList[i].nama === filterNama){
+        console.log(filterNama)
+        hasil.push(rokokList[i])
       }
       
     }
